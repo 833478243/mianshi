@@ -1,0 +1,54 @@
+from concurrent.futures.thread import ThreadPoolExecutor
+import requests,re
+import json
+import time
+import random
+from lxml import etree
+
+
+class JingDong():
+    def __init__(self,id):
+        self.id = id
+        self.comments_url = 'https://sclub.jd.com/comment/productPageComments.action?callback=fetchJSON_comment98vv257&productId={}&score=0&sortType=5&page={}&pageSize=10&isShadowSku=0&rid=0&fold=1'
+        self.user_agents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML like Gecko) Chrome/44.0.2403.155 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.1 Safari/537.36',
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.0 Safari/537.36', ]
+
+    def get_comments(self,url):
+        header = {
+            "referer": "https://item.jd.com",
+            "user-agent": random.choice(self.user_agents),
+        }
+        req = requests.get(url, headers=header).text
+        pattern = re.compile(r'"guid":".*?","content":"(.*?)"')
+        content = pattern.findall(req)
+        if content == []:
+            return None
+        page_for_content = {}
+        pattern = re.compile('page=(\d*)')
+        pagenum = int(pattern.findall(url)[0])
+        # print(pagenum)
+        # print(url)
+        content = str(content).replace('\\','').replace('\/','')
+        page_for_content[pagenum] = content
+        print(page_for_content)
+        return page_for_content
+
+    def comments_by_ThreadPoolExecutor(self):
+        page_count = 100    #得到商品总页数
+        urls = [self.comments_url.format(self.id,i) for i in range(0,page_count+1)]
+        executor = ThreadPoolExecutor(4)    #构造线程池
+        future = executor.map(self.get_comments,urls)
+        filename = open("JingDong_{}_comments.txt'".format(self.id), "w", encoding="utf-8")
+        for page_for_content in future:
+            page_for_content = json.dumps(page_for_content,ensure_ascii=False)
+            filename.write(page_for_content + '\n')
+
+if __name__ == '__main__':
+    id = 100005724680  #想要得到的商品id
+    jd = JingDong(id)
+    jd.comments_by_ThreadPoolExecutor()
