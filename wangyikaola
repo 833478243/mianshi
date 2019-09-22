@@ -1,0 +1,78 @@
+import requests
+import re
+import random
+from lxml import etree
+
+
+class WangYiKaoLa():
+    def __init__(self,id):
+        self.id = id
+        self.goods_url = 'https://goods.kaola.com/product/{}.html?kpm=MTAwMg%3D%3D.NDU5Ng%3D%3D.NzI1MjA%3D.Mg%3D%3D%40%40djEuMTAwMi4xMDAyX3BfMjM1NzI0Ni5fLmxlZ29fQT1udWxsLWN0c18xNTY5MDc0ODY4MzM4&_h5da=true'
+        self.comments_url = 'https://goods.kaola.com/commentAjax/comment_list_new.json'
+        self.user_agents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML like Gecko) Chrome/44.0.2403.155 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.1 Safari/537.36',
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.0 Safari/537.36', ]
+
+    def get_page_count(self):
+        header = {
+            "referer": "https://goods.kaola.com",
+            "user-agent": random.choice(self.user_agents),
+            'cookie': 'kaola_user_key=69030c35-6681-4e30-91a5-c156765438d2; JSESSIONID-WKL-8IO=VToMsJUoTEs81Y60clJIQ0gW%5C%5C2nlqrsacm9TnI8BRA%2BGWPIZKE2nHn%2BjAX0%2Bl8lr7ivd%2BPvYlWE9nmj%2BZRB8jkkSECtl%5ChX%5CNkx8umur3lwMdrlegmbc%5ChN%5CXyLh%2FuUweVeh%2FOlGZLfgkwSjB8c2VH3pBsbHA%2FxkBRPWIZJ10OdQy5Z%3A1569053891603; _klhtxd_=31; gtm_dsp_tag=__da_Vu0MCs_OVtqR9; _ntes_nnid=b7f8cad1c12dc87be091cb5d1e28e88d,1568967491763; hb_MA-930E-151AE827FE90_source=sp0.baidu.com; _ga=GA1.2.1288998641.1568967492; _gid=GA1.2.182450487.1568967492; davisit=1; __da_ntes_utma=2525167.426093694.1568967494.1568967494.1568967494.1; __da_ntes_utmz=2525167.1568967494.1.1.utmcsr%3Dpages.kaola.com%7Cutmccn%3D(prom)%7Cutmcmd%3Dprom%7Cutmpclid%3Dtag%3Dcf5274c0ff456df92e385fabd1c58301%26__da_Vu0MCs_OVtqR9%26fc%3Du1.c6897.g6898.k1445920816175.pz; __da_ntes_utmfc=utmcsr%3Dpages.kaola.com%7Cutmccn%3D(prom)%7Cutmcmd%3Dprom%7Cutmpclid%3Dtag%3Dcf5274c0ff456df92e385fabd1c58301%26__da_Vu0MCs_OVtqR9%26fc%3Du1.c6897.g6898.k1445920816175.pz; WM_TID=%2F5Wr2X0SRUdEAEUARUMso2CitRQTKX%2B6; _ga=GA1.3.1288998641.1568967492; _gid=GA1.3.182450487.1568967492; NTES_YD_SESS=WAUNpmkLPduTPW5Gk0DLSwavNGjyuK.9mynRJWUBi06k2wCz2RvHFKfkCx9VyhWGKaBqKq6ONzKcl3.qkuJYkro_npb0RYt1c.SX_PEcGbdEqSjUt47MiwpzDO_6VI19X9cyakKfzYvYgR5QU7P.kv5aXGszVWk5wZcC5Qm4dx8s9n1hIjEWoHv8.gIys0merU.iSURv_zqdtd84l1at1Mo1m2SKDa9BK8CER2W82lukA; S_INFO=1568968169|0|3&80##|13772816202; P_INFO=13772816202|1568968169|0|kaola|00&99|null&null&null#sxi&610100#10#0#0|&0||13772816202; NTES_YD_PASSPORT=E2H6XKXYBj.Q1zDP4w4eXhzVXSaTQQqBMDPCKahCM0JTybvYyrnuZzUlvmaI5JDHzV9pzpi6hYzOuWpIL2mGD8jwy4KkovftrsQ2CncCJ1aMXktv7TpaPa8nUfPt2CHxoNe9rZoPO2TGemVKWrHstvvpFSnrHAh.OK4u6249MQ5nppMd67ohAGMaNmcNzhMvNdW.E5_UTfu.QPMvYAQKf3ON7; _kaola_user_beta_traffic=15514112357; hb_MA-AE38-1FCC6CD7201B_source=search.kaola.com; KAOLA_ACCOUNT_RELATION=false#1#e57a41ec3e41cfc6940e6830bea9b9c1fc99dc4cdffa10811e9d599f8d9de777#null; NTES_KAOLA_RV=30562_1568972662690_0|2736526_1568967512843_0; _gat=1; __da_ntes_utmb=2525167.1.10.1568972663; _dc_gtm_UA-60320154-1=1'
+        }
+        req = requests.get(self.goods_url.format(self.id),headers=header).text
+        tree = etree.HTML(req)
+        comments_count = tree.xpath('//*[@id="commentCounts"]/text()')
+        comments_count = int(comments_count[0])
+        page_count = int(comments_count / 20) + 1  # 从每页有20条评论可以得到总页数
+        print('总共有{}评论，共{}页'.format(comments_count, page_count))
+        return page_count
+
+    def get_page_content(self):
+        header = {
+            "referer": "https://goods.kaola.com",
+            "user-agent": random.choice(self.user_agents),
+            'cookie': 'kaola_user_key=69030c35-6681-4e30-91a5-c156765438d2; JSESSIONID-WKL-8IO=VToMsJUoTEs81Y60clJIQ0gW%5C%5C2nlqrsacm9TnI8BRA%2BGWPIZKE2nHn%2BjAX0%2Bl8lr7ivd%2BPvYlWE9nmj%2BZRB8jkkSECtl%5ChX%5CNkx8umur3lwMdrlegmbc%5ChN%5CXyLh%2FuUweVeh%2FOlGZLfgkwSjB8c2VH3pBsbHA%2FxkBRPWIZJ10OdQy5Z%3A1569053891603; _klhtxd_=31; gtm_dsp_tag=__da_Vu0MCs_OVtqR9; _ntes_nnid=b7f8cad1c12dc87be091cb5d1e28e88d,1568967491763; hb_MA-930E-151AE827FE90_source=sp0.baidu.com; _ga=GA1.2.1288998641.1568967492; _gid=GA1.2.182450487.1568967492; davisit=1; __da_ntes_utma=2525167.426093694.1568967494.1568967494.1568967494.1; __da_ntes_utmz=2525167.1568967494.1.1.utmcsr%3Dpages.kaola.com%7Cutmccn%3D(prom)%7Cutmcmd%3Dprom%7Cutmpclid%3Dtag%3Dcf5274c0ff456df92e385fabd1c58301%26__da_Vu0MCs_OVtqR9%26fc%3Du1.c6897.g6898.k1445920816175.pz; __da_ntes_utmfc=utmcsr%3Dpages.kaola.com%7Cutmccn%3D(prom)%7Cutmcmd%3Dprom%7Cutmpclid%3Dtag%3Dcf5274c0ff456df92e385fabd1c58301%26__da_Vu0MCs_OVtqR9%26fc%3Du1.c6897.g6898.k1445920816175.pz; WM_TID=%2F5Wr2X0SRUdEAEUARUMso2CitRQTKX%2B6; _ga=GA1.3.1288998641.1568967492; _gid=GA1.3.182450487.1568967492; NTES_YD_SESS=WAUNpmkLPduTPW5Gk0DLSwavNGjyuK.9mynRJWUBi06k2wCz2RvHFKfkCx9VyhWGKaBqKq6ONzKcl3.qkuJYkro_npb0RYt1c.SX_PEcGbdEqSjUt47MiwpzDO_6VI19X9cyakKfzYvYgR5QU7P.kv5aXGszVWk5wZcC5Qm4dx8s9n1hIjEWoHv8.gIys0merU.iSURv_zqdtd84l1at1Mo1m2SKDa9BK8CER2W82lukA; S_INFO=1568968169|0|3&80##|13772816202; P_INFO=13772816202|1568968169|0|kaola|00&99|null&null&null#sxi&610100#10#0#0|&0||13772816202; NTES_YD_PASSPORT=E2H6XKXYBj.Q1zDP4w4eXhzVXSaTQQqBMDPCKahCM0JTybvYyrnuZzUlvmaI5JDHzV9pzpi6hYzOuWpIL2mGD8jwy4KkovftrsQ2CncCJ1aMXktv7TpaPa8nUfPt2CHxoNe9rZoPO2TGemVKWrHstvvpFSnrHAh.OK4u6249MQ5nppMd67ohAGMaNmcNzhMvNdW.E5_UTfu.QPMvYAQKf3ON7; _kaola_user_beta_traffic=15514112357; hb_MA-AE38-1FCC6CD7201B_source=search.kaola.com; KAOLA_ACCOUNT_RELATION=false#1#e57a41ec3e41cfc6940e6830bea9b9c1fc99dc4cdffa10811e9d599f8d9de777#null; NTES_KAOLA_RV=30562_1568972662690_0|2736526_1568967512843_0; _gat=1; __da_ntes_utmb=2525167.1.10.1568972663; _dc_gtm_UA-60320154-1=1'
+        }
+        data = {
+            'goodsId': '{}'.format(self.id),
+            'grade': '0',
+            'tagType': '0',
+            'hasContent': '0',
+            'showSelfGoodsComment': 'false',
+            'paginationContext': '{"lastId":"B464D8CCA8B0010000000184329585120190921065232GCc01fa16d113cdc1f"}',
+            'pageNo': 1,
+            'pageSize': '20',
+            'hasInitCommentTab': 'true'
+        }
+        f = open('WangYiKaoLa_{}_comments.txt'.format(self.id),'w',encoding='utf8')
+        page_count = self.get_page_count()
+        for page in range(2, page_count+1):
+            s = requests.post(self.comments_url, headers=header, data=data).text
+            pattern = re.compile('"commentContent":"(.*?)"')
+            commentContent = pattern.findall(s)
+            commentContent = str(commentContent).replace('\\n','')
+            print(commentContent)
+            f.write(commentContent + '\n')
+            pattern = re.compile(r'"lastId":"(.*?)"')
+            lastid = pattern.findall(s)[0]
+            data = {
+                'goodsId': '{}'.format(self.id),
+                'grade': '0',
+                'tagType': '0',
+                'hasContent': '0',
+                'showSelfGoodsComment': 'false',
+                'paginationContext': '{"lastId":"%s"}' % lastid,
+                'pageNo': page,
+                'pageSize': '20',
+                'hasInitCommentTab': 'true'
+            }
+        f.close()
+
+if __name__ == '__main__':
+    id = 152679  #想要得到的商品id
+    kl = WangYiKaoLa(id)
+    kl.get_page_content()
