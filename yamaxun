@@ -1,0 +1,68 @@
+from concurrent.futures.thread import ThreadPoolExecutor
+import requests
+import re
+import random
+from lxml import etree
+import time
+import json
+
+
+class YaMaXun():
+    def __init__(self,id):
+        self.id = id
+        self.url = 'https://www.amazon.cn/%E4%BA%9A%E9%A9%AC%E9%80%8AKindle%E7%94%B5%E5%AD%90%E4%B9%A6%E9%98%85%E8%AF%BB%E5%99%A8-%E2%80%94-%E7%94%B5%E5%AD%90%E5%A2%A8%E6%B0%B4%E5%B1%8F-%E5%86%85%E7%BD%AE%E9%98%85%E8%AF%BB%E7%81%AF-%E8%B6%85%E9%95%BF%E7%BB%AD%E8%88%AA/product-reviews/{}/ref=cm_cr_getr_d_paging_btm_next_{}?ie=UTF8&reviewerType=all_reviews&pageNumber={}'
+        self.user_agents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML like Gecko) Chrome/44.0.2403.155 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.1 Safari/537.36',
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.0 Safari/537.36', ]
+
+    def get_comments(self,url):
+        header = {
+            "referer": "https://www.amazon.cn",
+            "user-agent": random.choice(self.user_agents),
+        }
+        req = requests.get(url, headers=header).text
+        tree = etree.HTML(req)
+        content = tree.xpath('//span[@data-hook="review-body"]/span/text()')
+        page_for_content = {}
+        pattern = re.compile('pageNumber=(\d*)')
+        pagenum = int(pattern.findall(url)[0])
+        # print(pagenum)
+        # print(url)
+        page_for_content[pagenum] = content
+        print(page_for_content)
+        return page_for_content
+
+    def get_page_count(self):
+        header = {
+            "referer": "https://www.amazon.cn",
+            "user-agent": random.choice(self.user_agents),
+        }
+        req = requests.get(self.url.format(self.id,1,1), headers=header).text
+        tree = etree.HTML(req)
+        comments_count = tree.xpath('//*[@id="cm_cr-product_info"]/div/div[1]/div[2]/div/div/div[2]/div/span/text()')
+        comments_count = int(str(comments_count[0]).replace(',', ''))
+        page_count = int(comments_count/10) + 1    #从每页有10条评论可以得到总页数
+        print('总共有{}评论，共{}页'.format(comments_count,page_count))
+        return page_count
+
+    def comments_by_ThreadPoolExecutor(self):
+        page_count = self.get_page_count()    #得到商品总页数
+        urls = [self.url.format(self.id,i,i) for i in range(1,page_count+1)]
+        executor = ThreadPoolExecutor(10)    #构造线程池
+        future = executor.map(self.get_comments,urls)
+        filename = open("YaMaXun_{}_comments.txt'".format(self.id), "w", encoding="utf-8")
+        for page_for_content in future:
+            page_for_content = json.dumps(page_for_content,ensure_ascii=False)
+            filename.write(page_for_content + '\n')
+
+
+
+if __name__ == '__main__':
+    id = 'B06XXRNFZ9'  #爬取的商品id
+    ymx = YaMaXun(id)
+    ymx.comments_by_ThreadPoolExecutor()
+
